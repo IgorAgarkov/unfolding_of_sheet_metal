@@ -2,16 +2,15 @@
 import ezdxf
 from math import sin, pi, cos, sqrt
 
-
-
-a = 378   # внутренняя длина прямоугольного входа
-b = 278   # внутренняя ширина прямоугольного входа
-d = 300   # внутренний диаметры груглого выхода
-h = 250 - 4   # высота перехода
-s = 3     # толщина металла
-n = 5     # количество гибов приходящиеся на 1 угол (на сектор 90 гр)
-eccentricity = 0   # эксцентриситет по стороне а / координате х
-k = 0.4   # коэффициент смещения центрального слоя при гибке
+# input block
+a = 378     # internal length
+b = 278     # inner width
+d = 300     # inner diameter
+h = 250     # height
+s = 3       # metal sheet thickness
+n = 5       # number of bends per 1 angle (per 90 degree sector)
+ec = 0      # eccentricity on the 'a' side  (x coordinate)
+k = 0.4     # coefficient of displacement of the central layer
 
 def circles_intersection_points(r0, xy0, r1, xy1, side='right'):   # r0, r1 - радиусы, x0, y0, x1, y1 координаты окр-тей, side = right/left сторона отрисовки развёртки
     x0, y0 = xy0
@@ -43,7 +42,7 @@ for i in range(n):
     alpha = pi / 2 - i * pi / (2 * (n-1))
     x = round(r * cos(alpha), 3)
     y = round(r * sin(alpha), 3)
-    coors_circle_r.append((x + eccentricity, y, h))
+    coors_circle_r.append((x + ec, y, h))
 
 coors_circle_l = []        # координаты полуокружности (левая половина)
 r = d / 2 + k * s
@@ -51,7 +50,7 @@ for i in range(n):
     alpha = pi / 2 + i * pi / (2 * (n-1))
     x = round(r * cos(alpha), 3)
     y = round(r * sin(alpha), 3)
-    coors_circle_l.append((x + eccentricity, y, h))
+    coors_circle_l.append((x + ec, y, h))
 
 
 # print('Координаты точек окружности справа:', *coors_circle_r, sep='\n')
