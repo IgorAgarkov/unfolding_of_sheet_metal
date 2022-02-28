@@ -2,8 +2,6 @@
 import ezdxf
 from math import sin, pi, cos, sqrt
 
-
-
 a = 378   # внутренняя длина прямоугольного входа
 b = 278   # внутренняя ширина прямоугольного входа
 d = 300   # внутренний диаметры груглого выхода
@@ -13,7 +11,14 @@ n = 5     # количество гибов приходящиеся на 1 уг
 eccentricity = 0   # эксцентриситет по стороне а / координате х
 k = 0.4   # коэффициент смещения центрального слоя при гибке
 
-def circles_intersection_points(r0, xy0, r1, xy1, side='right'):   # r0, r1 - радиусы, x0, y0, x1, y1 координаты окр-тей, side = right/left сторона отрисовки развёртки
+def circles_intersection_points(r0, xy0, r1, xy1, side='right'):
+    '''
+    Функция находит координаты пересечения двух окружностей на плоскости
+    Используется для построения развёртки, когда мы, как будто рисуем две окружности из известных точек, чтобы найти третью
+    r0, r1   - радиусы окружностей
+    xy0, xy1 - кортежи/списки координаты центров окружностей
+    side     - торона отрисовки развёртки, right/left, по муолчанию right
+    '''
     x0, y0 = xy0
     x1, y1 = xy1
     d = sqrt((x1 - x0)**2 + (y1 - y0)**2)
@@ -21,6 +26,8 @@ def circles_intersection_points(r0, xy0, r1, xy1, side='right'):   # r0, r1 - р
     h = sqrt(r0**2 - a**2)
     x2 = x0 + a * (x1 - x0) / d   
     y2 = y0 + a * (y1 - y0) / d   
+    
+    # т.к. окружности пересекаются в общем случае в двух точках, выбираем какую из точек принять
     if side == 'right':
         x3 = x2 - h * (y1 - y0) / d
         y3 = y2 + h * (x1 - x0) / d    
@@ -32,7 +39,13 @@ def circles_intersection_points(r0, xy0, r1, xy1, side='right'):   # r0, r1 - р
 
 
 
-def line_length(coord0, coord1):      # на вход координаты точек прямой в виде 2-х кортежей (x0, y0, z0)  и (x1, y1, z1)
+def line_length(coord0, coord1):
+    '''
+    Функция находит длину отрезка по координатам в трёхмерном пространстве
+    На вход подаются два кортежа с координатами x, y, z начальной и конечной точек
+    coord0 - кортеж вида (x0, y0, z0)
+    coord1 - кордеж вида (x1, y1, z1)
+    '''
     x0, y0, z0 = coord0
     x1, y1, z1 = coord1
     return sqrt((x0 - x1)**2 + (y0 - y1)**2 + (z0 - z1)**2)
@@ -53,50 +66,33 @@ for i in range(n):
     y = round(r * sin(alpha), 3)
     coors_circle_l.append((x + eccentricity, y, h))
 
+half_a = a / 2 + k * s   # половина длины + k толщины металла
+half_b = b / 2 + k * s   # половина ширины + k толщины металла
 
-# print('Координаты точек окружности справа:', *coors_circle_r, sep='\n')
-# print()
-# print('Координаты точек окружности слева:', *coors_circle_l, sep='\n')
-
-
-half_a = a / 2 + k * s   # половина длины + 0,4 толщины металла
-half_b = b / 2 + k * s   # половина ширины + 0,4 толщины металла
-
-coors_rectangle_r = [(0, half_b, 0), (half_a, half_b, 0), (half_a, 0, 0)]  # Координаты точек прямоугольного входа (правая половина)
+coors_rectangle_r = [(0, half_b, 0), (half_a, half_b, 0), (half_a, 0, 0)]    # Координаты точек прямоугольного входа (правая половина)
 coors_rectangle_l = [(0, half_b, 0), (-half_a, half_b, 0), (-half_a, 0, 0)]  # Координаты точек прямоугольного входа (левая половина)
-
-
-# print('Координаты точек прямоугольника', *coors_rectangle_r, sep='\n')
-# print(line_length((-140.2, -190.2, 4.0), (-106.914545, -106.914545, 250.0)))
 
 point0 = (0, 0)
 point1 = (half_a, 0)
 point2 = (-half_a, 0)
 small_radius = 2 * r * sin(pi / (4 * (n - 1)))   # малый радиус для построения, равный стороне многогранника
 
-
-
-doc = ezdxf.new()
-
-msp = doc.modelspace()  # add new entities to the modelspace
+doc = ezdxf.new()       # создаём новый файл
+msp = doc.modelspace()  # добавляем новый объект в пространство моделей
 
 
 # рисуем правую часть
-msp.add_line(point0, point1)  # нижняя линия вправо
-msp.add_circle(point1, radius=1)  # добавляем окружность радиусом 1 в точку point1
+msp.add_line(point0, point1)      # нижняя линия вправо
+msp.add_circle(point1, radius=1)  # добавляем окружность радиусом 1 в точку point1 (технологическая особенность данного производства, можно закомментировать)
 
-rad0 = line_length(coors_circle_r[0], coors_rectangle_r[0]) # расстояние между центральной верхней точкой многогранника и центральной точкой прямоугольника
-# print(coors_circle_r[0], coors_rectangle_r[0])
-# print(rad0)
+rad0 = line_length(coors_circle_r[0], coors_rectangle_r[0])        # расстояние между центральной верхней точкой многогранника и центральной точкой прямоугольника
 rad1 = line_length(coors_circle_r[0], coors_rectangle_r[1])
-# print(coors_rectangle_r[1])
 new_coor = circles_intersection_points(rad0, point0, rad1, point1) # координата центральной верхней точки развёртки
 center_point = new_coor
-msp.add_circle(center_point, radius=1)  # добавляем окружность радиусом 1 в точку center_point
-# msp.add_line(point0, new_coor)  # первая вертикальная линия от нижнего центра
-msp.add_line(point1, new_coor)
+msp.add_circle(center_point, radius=1)  # добавляем окружность радиусом 1 в точку center_point (технологическая особенность данного производства, можно закомментировать)
+msp.add_line(point1, new_coor)          # рисуем линию
 
-for i in range(1, len(coors_circle_r)):
+for i in range(1, len(coors_circle_r)):   # проходим циклом по части координат и рисуем линии по этим координатам и окружности радиусом 1
     previous_new_coor = new_coor
     rad1 = line_length(coors_circle_r[i], coors_rectangle_r[1])
     new_coor = circles_intersection_points(small_radius, previous_new_coor, rad1, point1)
@@ -106,21 +102,19 @@ for i in range(1, len(coors_circle_r)):
 
 # рисуем финальные 2 линии справа
 previous_new_coor = new_coor  
-
 rad0 = line_length(coors_circle_r[n - 1], coors_rectangle_r[2])
 rad1 = half_b
-# print(rad1)
 new_coor = circles_intersection_points(rad0, previous_new_coor, rad1, point1)
-# print(new_coor)
 msp.add_line(previous_new_coor, new_coor)   
 msp.add_line(point1, new_coor) 
 
 
 # рисуем левую часть
-msp.add_line(point0, point2)  # нижняя линия влево
+msp.add_line(point0, point2)      # нижняя линия влево
 msp.add_circle(point2, radius=1)  # добавляем окружность радиусом 1 в точку point2
 new_coor = center_point
 msp.add_line(point2, new_coor)
+
 for i in range(1, len(coors_circle_l)):
     previous_new_coor = new_coor
     rad1 = line_length(coors_circle_l[i], coors_rectangle_l[1])
@@ -129,19 +123,14 @@ for i in range(1, len(coors_circle_l)):
     msp.add_line(point2, new_coor)
     msp.add_circle(new_coor, radius=1)  # добавляем окружность радиусом 1 в точку new_coor
 
-
 # рисуем финальные 2 линии слева
 previous_new_coor = new_coor  
-
 rad0 = line_length(coors_circle_l[n - 1], coors_rectangle_l[2])
 rad1 = half_b
-# new_coor = circles_intersection_points(rad0, previous_new_coor, rad1, point1, side='left')
 new_coor = circles_intersection_points(rad0, previous_new_coor, rad1, point2, side='left')
 msp.add_line(previous_new_coor, new_coor)   
 msp.add_line(point2, new_coor) 
 
-
-
-doc.saveas('line.dxf')
+doc.saveas('drawing.dxf')
 
 
